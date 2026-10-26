@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Build native libclips.so
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential
+          make -C native/clips
+          mkdir -p native/clips/build/native/linux-x64
+          test -f native/clips/build/native/linux-x64/libclips.so
+
+      - name: Test
+        run: dotnet test ManagedDotNet.CLIPS.sln -c Release --verbosity normal
+
+      - name: Pack
+        run: dotnet pack src/CLIPS.csproj -c Release --no-build
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Build native clips.dll
+        shell: pwsh
+        run: |
+          cmake -S native/clips -B native/clips/build -A x64
+          cmake --build native/clips/build --config Release
+          New-Item -ItemType Directory -Force -Path native/clips/build/native/win-x64 | Out-Null
+          $dll = Get-ChildItem -Path native/clips/build -Recurse -Filter clips.dll | Select-Object -First 1
+          if (-not $dll) { throw "clips.dll not found" }
+          Copy-Item $dll.FullName native/clips/build/native/win-x64/clips.dll -Force
+
+      - name: Test
+        run: dotnet test ManagedDotNet.CLIPS.sln -c Release --verbosity normal
+
+      - name: Pack
+        run: dotnet pack src/CLIPS.csproj -c Release --no-build
