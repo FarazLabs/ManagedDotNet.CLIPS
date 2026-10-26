@@ -1,5 +1,3 @@
-using CLIPSNET;
-using ManagedDotNet.CLIPS.Abstractions;
 using ManagedDotNet.CLIPS.Core;
 
 namespace ManagedDotNet.CLIPS.Api;

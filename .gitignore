@@ -370,6 +370,7 @@ graphify-out/
 # CLIPS native build outputs
 Libraries/
 **/nupkgs/
+native/clips/build/
 
 # MSVC resource compiler temp files
 RCa*

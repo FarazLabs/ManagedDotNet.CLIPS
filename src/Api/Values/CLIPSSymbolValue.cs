@@ -1,27 +1,15 @@
-using CLIPSNET;
-
 namespace ManagedDotNet.CLIPS.Api.Values;
+
 public class CLIPSSymbolValue : CLIPSValue
 {
-    public override CLIPSValueType Type { get; protected set; } = CLIPSValueType.SYMBOL;
+    public override CLIPSValueType Type => CLIPSValueType.SYMBOL;
 
-    internal SymbolValue Value => (SymbolValue) PrimitiveValue;
+    public string Value { get; }
 
-    public string AsString() => Value.ToString();
+    public override string ToString() => Value;
 
-    internal CLIPSSymbolValue(PrimitiveValue primitiveValue) : base(primitiveValue)
+    internal CLIPSSymbolValue(string value)
     {
-        // Type validation happens in base constructor via ValidateType()
-    }
-
-    protected override bool ValidateType(out string? error)
-    {
-        if (PrimitiveValue is not SymbolValue)
-        {
-            error = $"{PrimitiveValue} is not a CLIPS symbol";
-            return false;
-        }
-        error = null;
-        return true;
+        Value = value;
     }
 }

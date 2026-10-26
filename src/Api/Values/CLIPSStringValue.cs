@@ -1,27 +1,15 @@
-using CLIPSNET;
-
 namespace ManagedDotNet.CLIPS.Api.Values;
+
 public class CLIPSStringValue : CLIPSValue
 {
-    public override CLIPSValueType Type { get; protected set; } = CLIPSValueType.STRING;
+    public override CLIPSValueType Type => CLIPSValueType.STRING;
 
-    internal StringValue Value => (StringValue) PrimitiveValue;
+    public string Value { get; }
 
-    public string AsString() => Value.ToString();
+    public string AsString() => Value;
 
-    internal CLIPSStringValue(PrimitiveValue primitiveValue) : base(primitiveValue)
+    internal CLIPSStringValue(string value)
     {
-        // Type validation happens in base constructor via ValidateType()
-    }
-
-    protected override bool ValidateType(out string? error)
-    {
-        if (PrimitiveValue is not StringValue)
-        {
-            error = $"{PrimitiveValue} is not a CLIPS string";
-            return false;
-        }
-        error = null;
-        return true;
+        Value = value;
     }
 }

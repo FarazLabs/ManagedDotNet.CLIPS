@@ -1,27 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using CLIPSNET;
 using ManagedDotNet.CLIPS.Api.Values;
 
 namespace ManagedDotNet.CLIPS.Api;
+
 public abstract class CLIPSValue
 {
-    protected PrimitiveValue PrimitiveValue { get; init; }
-
-    internal CLIPSValue(PrimitiveValue primitiveValue)
-    {
-        PrimitiveValue = primitiveValue;
-        bool validated = ValidateType(out var error);
-        if (!validated)
-            throw new InvalidOperationException(error);
-    }
-
-    public abstract CLIPSValueType Type { get; protected set; }
-
-    protected abstract bool ValidateType(out string? error); 
+    public abstract CLIPSValueType Type { get; }
 
     public CLIPSMultifieldValue AsMultifieldValue()
     {
@@ -30,7 +13,7 @@ public abstract class CLIPSValue
             return (CLIPSMultifieldValue)this;
         }
 
-        throw new InvalidOperationException($"Failed to cast clips value object with type {this.Type} to a multifield value");
+        throw new InvalidOperationException($"Failed to cast clips value object with type {Type} to a multifield value");
     }
 
     public CLIPSStringValue AsStringValue()
@@ -40,7 +23,7 @@ public abstract class CLIPSValue
             return (CLIPSStringValue)this;
         }
 
-        throw new InvalidOperationException($"Failed to cast clips value object with type {this.Type} to a string value");
+        throw new InvalidOperationException($"Failed to cast clips value object with type {Type} to a string value");
     }
 
     public CLIPSIntegerValue AsIntegerValue()
@@ -50,7 +33,7 @@ public abstract class CLIPSValue
             return (CLIPSIntegerValue)this;
         }
 
-        throw new InvalidOperationException($"Failed to cast clips value object with type {this.Type} to an integer value");
+        throw new InvalidOperationException($"Failed to cast clips value object with type {Type} to an integer value");
     }
 
     public CLIPSFloatValue AsFloatValue()
@@ -60,7 +43,7 @@ public abstract class CLIPSValue
             return (CLIPSFloatValue)this;
         }
 
-        throw new InvalidOperationException($"Failed to cast clips value object with type {this.Type} to a float value");
+        throw new InvalidOperationException($"Failed to cast clips value object with type {Type} to a float value");
     }
 
     public CLIPSSymbolValue AsSymbolValue()
@@ -70,7 +53,7 @@ public abstract class CLIPSValue
             return (CLIPSSymbolValue)this;
         }
 
-        throw new InvalidOperationException($"Failed to cast clips value object with type {this.Type} to a symbol value");
+        throw new InvalidOperationException($"Failed to cast clips value object with type {Type} to a symbol value");
     }
 
     public CLIPSFactAddressValue AsFactAddressValue()
@@ -80,7 +63,7 @@ public abstract class CLIPSValue
             return (CLIPSFactAddressValue)this;
         }
 
-        throw new InvalidOperationException($"Failed to cast clips value object with type {this.Type} to a fact address value");
+        throw new InvalidOperationException($"Failed to cast clips value object with type {Type} to a fact address value");
     }
 
     public CLIPSInstanceAddressValue AsInstanceAddressValue()
@@ -90,7 +73,7 @@ public abstract class CLIPSValue
             return (CLIPSInstanceAddressValue)this;
         }
 
-        throw new InvalidOperationException($"Failed to cast clips value object with type {this.Type} to an instance address value");
+        throw new InvalidOperationException($"Failed to cast clips value object with type {Type} to an instance address value");
     }
 
     public CLIPSInstanceNameValue AsInstanceNameValue()
@@ -100,7 +83,7 @@ public abstract class CLIPSValue
             return (CLIPSInstanceNameValue)this;
         }
 
-        throw new InvalidOperationException($"Failed to cast clips value object with type {this.Type} to an instance name value");
+        throw new InvalidOperationException($"Failed to cast clips value object with type {Type} to an instance name value");
     }
 
     public CLIPSVoidValue AsVoidValue()
@@ -110,10 +93,9 @@ public abstract class CLIPSValue
             return (CLIPSVoidValue)this;
         }
 
-        throw new InvalidOperationException($"Failed to cast clips value object with type {this.Type} to a void value");
+        throw new InvalidOperationException($"Failed to cast clips value object with type {Type} to a void value");
     }
 
-    // Type checking properties using 'this is' pattern
     public bool IsMultifield => this is CLIPSMultifieldValue;
     public bool IsString => this is CLIPSStringValue;
     public bool IsInteger => this is CLIPSIntegerValue;
@@ -123,8 +105,7 @@ public abstract class CLIPSValue
     public bool IsInstanceAddress => this is CLIPSInstanceAddressValue;
     public bool IsInstanceName => this is CLIPSInstanceNameValue;
     public bool IsVoid => this is CLIPSVoidValue;
-    
-    // Convenience properties for common groupings
+
     public bool IsNumber => IsInteger || IsFloat;
     public bool IsLexeme => IsString || IsSymbol || IsInstanceName;
     public bool IsAddress => IsFactAddress || IsInstanceAddress;

@@ -2,32 +2,29 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <PlatformTarget>x64</PlatformTarget>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>ManagedDotNet.CLIPS</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DisableImplicitNamespaceImports>false</DisableImplicitNamespaceImports>
 
-    <!-- Package metadata -->
     <PackageId>ManagedDotNet.CLIPS</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Authors>Faraz Zabihian</Authors>
     <Company>N/A</Company>
     <Title>ManagedDotNet.CLIPS</Title>
     <Description>
-      Managed .NET wrapper around CLIPS 6.4 (C++/CLI CLIPSNET): pooled environments,
-      typed Eval results, fact assert/fire, and binary capture/restore for rules engines.
-      Windows x64 only.
+      Managed .NET 8 wrapper around CLIPS 6.4 via P/Invoke (libclips / clips.dll).
+      Pooled environments, typed Eval results, fact assert/fire, and binary capture/restore.
+      Supports linux-x64 and win-x64.
     </Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/FarazLabs/ManagedDotNet.CLIPS</RepositoryUrl>
     <PackageProjectUrl>https://github.com/FarazLabs/ManagedDotNet.CLIPS</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>
-      CLIPS,RulesEngine,ExpertSystem,CLIPSNET,ManagedCLIPS,Net8,Windows,x64
-    </PackageTags>
+    <PackageTags>CLIPS,RulesEngine,ExpertSystem,PInvoke,Net8,Linux,Windows,x64</PackageTags>
 
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageOutputPath>nupkgs</PackageOutputPath>
@@ -37,13 +34,14 @@
     <NeutralLanguage>en</NeutralLanguage>
     <PublishToGitHubPackages>true</PublishToGitHubPackages>
 
-    <!-- Enable recommended code analysis -->
     <AnalysisMode>Recommended</AnalysisMode>
     <AnalysisLevel>latest</AnalysisLevel>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <WarningsAsErrors>CS8600;CS8602;CS8604;CS8509;CS8629</WarningsAsErrors>
+
+    <NativeOutDir>$(MSBuildThisFileDirectory)..\native\clips\build\native</NativeOutDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -55,11 +53,27 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\native\CLIPSCLRWrapper\CLIPSCLRWrapper.vcxproj" />
+    <None Include="..\README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\README.md" Pack="true" PackagePath="" />
+    <InternalsVisibleTo Include="CLIPS.Tests" />
+  </ItemGroup>
+
+  <!-- Copy / pack native libs when present -->
+  <ItemGroup Condition="Exists('$(NativeOutDir)\win-x64\clips.dll')">
+    <None Include="$(NativeOutDir)\win-x64\clips.dll"
+          Pack="true"
+          PackagePath="runtimes/win-x64/native/"
+          CopyToOutputDirectory="PreserveNewest"
+          Link="runtimes\win-x64\native\clips.dll" />
+  </ItemGroup>
+  <ItemGroup Condition="Exists('$(NativeOutDir)\linux-x64\libclips.so')">
+    <None Include="$(NativeOutDir)\linux-x64\libclips.so"
+          Pack="true"
+          PackagePath="runtimes/linux-x64/native/"
+          CopyToOutputDirectory="PreserveNewest"
+          Link="runtimes\linux-x64\native\libclips.so" />
   </ItemGroup>
 
 </Project>

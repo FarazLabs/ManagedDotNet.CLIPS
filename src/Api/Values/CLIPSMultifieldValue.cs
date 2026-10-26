@@ -1,18 +1,13 @@
-using CLIPSNET;
-
 namespace ManagedDotNet.CLIPS.Api.Values;
 
-/// <summary>
-/// CLIPS Multifield value that can hold items of any CLIPSValue type.
-/// </summary>
 public class CLIPSMultifieldValue : CLIPSValue, IEnumerable<CLIPSValue>
 {
-    public override CLIPSValueType Type { get; protected set; } = CLIPSValueType.MULTIFIELD;
+    private readonly IReadOnlyList<CLIPSValue> _items;
 
-    private MultifieldValue Value => (MultifieldValue) PrimitiveValue;
+    public override CLIPSValueType Type => CLIPSValueType.MULTIFIELD;
 
-    public int Count => Value.Count;
-    
+    public int Count => _items.Count;
+
     public bool IsEmpty => Count == 0;
 
     public CLIPSValue this[int index]
@@ -20,56 +15,22 @@ public class CLIPSMultifieldValue : CLIPSValue, IEnumerable<CLIPSValue>
         get
         {
             if (index < 0 || index >= Count)
-                throw new ArgumentOutOfRangeException(
-                    nameof(index),
-                    index,
-                    $"Index {index} is out of range [0, {Count})."
-                );
+            {
+                throw new ArgumentOutOfRangeException(nameof(index), index, $"Index {index} is out of range [0, {Count}).");
+            }
 
-            PrimitiveValue? primitiveValue = Value[index];
-            
-            if (primitiveValue == null)
-                throw new InvalidOperationException($"Primitive value at index {index} is null");
-
-            // Convert the primitive value to appropriate a CLIPSValue type
-            CLIPSValue value = primitiveValue.ToCLIPSValue();
-            return value;
+            return _items[index];
         }
     }
 
-    public IEnumerator<CLIPSValue> GetEnumerator()
+    internal CLIPSMultifieldValue(IReadOnlyList<CLIPSValue> items)
     {
-        for (int i = 0; i < Count; i++)
-        {
-            yield return this[i];
-        }
+        _items = items;
     }
 
-    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
-    }
+    public IEnumerator<CLIPSValue> GetEnumerator() => _items.GetEnumerator();
 
-    public List<CLIPSValue> AsList()
-    {
-        var list = new List<CLIPSValue>();
-        for (int i = 0; i < Count; i++)
-        {
-            list.Add(this[i]);
-        }
-        return list;
-    }
+    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
 
-    internal CLIPSMultifieldValue(PrimitiveValue primitiveValue) : base(primitiveValue) {}
-
-    protected override bool ValidateType(out string? error)
-    {
-        if (PrimitiveValue is not MultifieldValue)
-        {
-            error = $"{PrimitiveValue} is not a CLIPS multifield";
-            return false;
-        }
-        error = null;
-        return true;
-    }
+    public List<CLIPSValue> AsList() => _items.ToList();
 }

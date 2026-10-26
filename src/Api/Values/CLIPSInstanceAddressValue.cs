@@ -1,25 +1,15 @@
-using CLIPSNET;
-
 namespace ManagedDotNet.CLIPS.Api.Values;
+
 public class CLIPSInstanceAddressValue : CLIPSValue
 {
-    public override CLIPSValueType Type { get; protected set; } = CLIPSValueType.INSTANCE_ADDRESS;
+    public override CLIPSValueType Type => CLIPSValueType.INSTANCE_ADDRESS;
 
-    internal InstanceAddressValue Value => (InstanceAddressValue) PrimitiveValue;
+    public string Display { get; }
 
-    internal CLIPSInstanceAddressValue(PrimitiveValue primitiveValue) : base(primitiveValue)
+    public override string ToString() => Display;
+
+    internal CLIPSInstanceAddressValue(string display)
     {
-        // Type validation happens in base constructor via ValidateType()
-    }
-
-    protected override bool ValidateType(out string? error)
-    {
-        if (PrimitiveValue is not InstanceAddressValue)
-        {
-            error = $"{PrimitiveValue} is not a CLIPS instance address";
-            return false;
-        }
-        error = null;
-        return true;
+        Display = display;
     }
 }

@@ -1,12 +1,8 @@
-using System;
-using System.IO;
-using System.Linq;
 using System.Text;
-using System.Text.Json;
-using CLIPSNET;
 using ManagedDotNet.CLIPS.Abstractions;
 using ManagedDotNet.CLIPS.Api;
 using ManagedDotNet.CLIPS.Api.Values;
+using ManagedDotNet.CLIPS.Interop;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -14,89 +10,79 @@ namespace ManagedDotNet.CLIPS.Core;
 
 public class ManagedCLIPSEnvironment : IManagedCLIPSEnvironment, IDisposable
 {
-    private readonly ILogger<IManagedCLIPSEnvironment> _logger;
-    private readonly CLIPSNET.Environment _environment; // Use the wrapper's Environment
-    private readonly MemoryRouter _memoryRouter;
+    private readonly ILogger _logger;
+    private IntPtr _environment;
 
-    internal ManagedCLIPSEnvironment(ILogger<IManagedCLIPSEnvironment> logger)
+    internal ManagedCLIPSEnvironment(ILogger logger)
     {
         _logger = logger;
-        _environment = new CLIPSNET.Environment();
-        // instantiate the memory router and add to the environment
-        _memoryRouter = new MemoryRouter();
-        _environment.AddRouter(_memoryRouter); // FIX: Only pass the router instance
-        _environment.Build(Constants.GET_INSTANCE_LIST_DEFINITION);
-        _environment.Build(Constants.PRETTY_PRINT_INSTANCE_TO_ROUTER_DEFINITION);
+        _environment = ClipsNative.Clips_CreateEnvironment();
+        if (_environment == IntPtr.Zero)
+        {
+            throw new InvalidOperationException("Failed to create CLIPS environment");
+        }
     }
 
-
-    #region API
-    
-
-    /// <summary>
-    /// Evaluates a CLIPS expression in the current environment.
-    /// </summary>
-    /// <param name="expression">A valid CLIPS expression (e.g., <c>(+ 1 2)</c>).</param>
-    /// <returns>
-    /// The result as a <c>CLIPSPrimitiveValue</c>, preserving CLIPS types
-    /// (numbers, symbols, strings, multifields, etc.) while hiding the underlying implementation.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="expression"/> is null.</exception>
-    /// <exception cref="ArgumentException">Thrown if <paramref name="expression"/> is empty or invalid.</exception>
     public CLIPSValue Eval(string expression)
     {
         if (string.IsNullOrEmpty(expression))
+        {
             throw new ArgumentException("Expression cannot be null or empty", nameof(expression));
+        }
 
-        PrimitiveValue? result = _environment.Eval(expression);
+        EnsureAlive();
 
-        if (result == null)
-            throw new InvalidOperationException("CLIPS evaluation returned null");
+        if (ClipsNative.Clips_Eval(_environment, expression, out ClipsPInvokeValue native) == 0)
+        {
+            throw new InvalidOperationException($"CLIPS evaluation failed for expression: {expression}");
+        }
 
-        CLIPSValue value = result.ToCLIPSValue();
-
-        return value;
+        try
+        {
+            return ClipsValueMapper.ToManaged(ref native);
+        }
+        finally
+        {
+            ClipsNative.Clips_FreeValue(ref native);
+        }
     }
 
-    /// <summary>
-    /// Evaluates a CLIPS expression and returns the result cast to the specified CLIPS value type.
-    /// </summary>
-    /// <typeparam name="T">The CLIPS value type to cast the result to (e.g., CLIPSIntegerValue, CLIPSStringValue, etc.)</typeparam>
-    /// <param name="expression">A valid CLIPS expression (e.g., <c>(+ 1 2)</c>).</param>
-    /// <returns>The result cast to the specified CLIPS value type.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="expression"/> is null.</exception>
-    /// <exception cref="ArgumentException">Thrown if <paramref name="expression"/> is empty or invalid.</exception>
-    /// <exception cref="InvalidOperationException">Thrown if the result cannot be cast to the specified type.</exception>
     public T Eval<T>(string expression) where T : CLIPSValue
     {
         CLIPSValue result = Eval(expression);
-        
+
         if (result is T castResult)
         {
             return castResult;
         }
-        
+
         throw new InvalidOperationException($"CLIPS evaluation result of type {result.Type} cannot be cast to {typeof(T).Name}");
     }
 
-    
     public bool Load(string filePath)
-    { 
+    {
         if (string.IsNullOrEmpty(filePath))
+        {
             throw new ArgumentException("File path cannot be null or empty", nameof(filePath));
+        }
 
         if (!File.Exists(filePath))
+        {
             throw new FileNotFoundException($"CLIPS file not found: {filePath}");
+        }
+
+        EnsureAlive();
 
         try
         {
-            // Escape backslashes for CLIPS
-            string escapedPath = filePath.Replace("\\", "\\\\");
-            string loadCommand = $"(load \"{escapedPath}\")";
-            
             _logger.LogInformation("Loading CLIPS file: {FilePath}", filePath);
-            _environment.Eval(loadCommand);
-            
+            int ok = ClipsNative.Clips_Load(_environment, filePath);
+            if (ok == 0)
+            {
+                _logger.LogError("Failed to load CLIPS file: {FilePath}", filePath);
+                return false;
+            }
+
             _logger.LogInformation("Successfully loaded CLIPS file: {FilePath}", filePath);
             return true;
         }
@@ -109,97 +95,57 @@ public class ManagedCLIPSEnvironment : IManagedCLIPSEnvironment, IDisposable
 
     public bool Reset()
     {
-        _logger.LogInformation($"{nameof(IManagedCLIPSEnvironment)}: resetting");
+        _logger.LogInformation("{Name}: resetting", nameof(IManagedCLIPSEnvironment));
 
         try
         {
-            // reset clips :
-            // retracts facts
-            // deletes instances
-            // re-sets global variables to their original values
-            // asserts deffacts 
-            // makes definstances
-            _environment.Reset();
-
-            _logger.LogInformation($"{nameof(IManagedCLIPSEnvironment)}: reset completed");
+            EnsureAlive();
+            ClipsNative.Clips_Reset(_environment);
+            _logger.LogInformation("{Name}: reset completed", nameof(IManagedCLIPSEnvironment));
             return true;
         }
         catch (Exception e)
         {
-            _logger.LogError(e, $"{nameof(IManagedCLIPSEnvironment)}: failed to reset the environment");
+            _logger.LogError(e, "{Name}: failed to reset the environment", nameof(IManagedCLIPSEnvironment));
             return false;
         }
     }
 
-    /// <summary>
-    /// Asserts a fact into the working memory.
-    /// </summary>
-    /// <param name="fact">The fact to assert.</param>
-    /// <remarks>
-    /// The fact becomes eligible for rule matching immediately.
-    /// Use <see cref="Fire"/> to run the agenda and trigger activations.
-    /// </remarks>
     public void Assert(IFact fact)
     {
-        _logger.LogInformation($"{nameof(IManagedCLIPSEnvironment)}: asserting");
+        _logger.LogInformation("{Name}: asserting", nameof(IManagedCLIPSEnvironment));
+        EnsureAlive();
 
-        IEnumerable<string> clipsFacts = fact.Serialize();
-
-        // cast and assert
-        foreach (string f in clipsFacts)
+        foreach (string f in fact.Serialize())
         {
-            _environment.AssertString(f);
+            if (ClipsNative.Clips_AssertString(_environment, f) == 0)
+            {
+                throw new InvalidOperationException($"Failed to assert fact: {f}");
+            }
         }
     }
 
-    /// <summary>
-    /// Fires the rules agenda until quiescence or a halt condition.
-    /// </summary>
-    /// <remarks>
-    /// Executes rule activations generated from the current working memory.
-    /// Implementation may stop on explicit halts or when no activations remain.
-    /// </remarks>
     public void Fire()
     {
-
-        _logger.LogInformation($"{nameof(IManagedCLIPSEnvironment)}: firing");
-
-        _environment.Run();
+        _logger.LogInformation("{Name}: firing", nameof(IManagedCLIPSEnvironment));
+        EnsureAlive();
+        ClipsNative.Clips_Run(_environment, -1);
     }
 
-    /// <summary>
-    /// Creates a restorable snapshot of the engine state for specified modules.P
-    /// </summary>
-    /// <param name="moduleNames">Array of module names to capture. If null, captures all available modules. Throws exception if any specified module is not found.</param>
-    /// <returns>
-    /// A <see cref="Api.EnvironmentCapture"/> capturing the current state (i.e., facts and instances) for the specified modules
-    /// </returns>
-    /// <exception cref="ArgumentException">Thrown if any specified module name is not found in the environment.</exception>
-    /// <remarks>
-    /// Use <see cref="Restore"/> to revert the engine to this state later.
-    /// Modules are captured in the order specified and restored in the same order.
-    /// </remarks>
     public EnvironmentCapture Capture()
     {
         string[] modules = GetModules();
-
         var capture = new EnvironmentCapture();
 
-        // Validate specified modules exist
         for (int i = 0; i < modules.Length; i++)
         {
             string moduleName = modules[i];
-
-            var facts = GetFacts(moduleName);
-            var instances = GetInstances(moduleName);
-
             var moduleCapture = new ModuleCapture(
-                name : moduleName,
-                facts : facts,
-                instances: instances,
-                captureOrder: i + 1
-            );
-            
+                name: moduleName,
+                facts: GetFacts(moduleName),
+                instances: GetInstances(moduleName),
+                captureOrder: i + 1);
+
             capture.Modules.Add(moduleCapture);
         }
 
@@ -208,173 +154,134 @@ public class ManagedCLIPSEnvironment : IManagedCLIPSEnvironment, IDisposable
 
     public bool Restore(EnvironmentCapture environmentCapture)
     {
-        if (environmentCapture == null) throw new ArgumentNullException(nameof(environmentCapture));
+        if (environmentCapture == null)
+        {
+            throw new ArgumentNullException(nameof(environmentCapture));
+        }
 
         Reset();
-
         _logger.LogInformation("Loading...");
 
-        // Restore facts and instances for each module in index order
         foreach (var moduleCapture in environmentCapture.Modules.OrderByDescending(m => m.CaptureOrder))
         {
-            // Set the current module
-            _environment.Eval($"(set-current-module {moduleCapture.ModuleName})");
+            Eval($"(set-current-module {moduleCapture.ModuleName})");
 
-            // First, load all facts for this module (safely skip system facts)
             foreach (string fact in moduleCapture.Facts)
             {
-                if (!string.IsNullOrEmpty(fact) && 
-                    fact != "(initial-fact)" && 
-                    !fact.StartsWith("(initial-fact"))
+                if (!string.IsNullOrEmpty(fact) &&
+                    fact != "(initial-fact)" &&
+                    !fact.StartsWith("(initial-fact", StringComparison.Ordinal))
                 {
-                    _environment.AssertString(fact);
+                    ClipsNative.Clips_AssertString(_environment, fact);
                 }
             }
 
-            // Then, load all instances for this module (safely skip system instances)
             foreach (string prettyPrintedInstance in moduleCapture.Instances)
             {
-                if 
-                (
-                    !string.IsNullOrEmpty(prettyPrintedInstance) &&
-                    !prettyPrintedInstance.StartsWith("initial-object")
-                )
+                if (!string.IsNullOrEmpty(prettyPrintedInstance) &&
+                    !prettyPrintedInstance.StartsWith("initial-object", StringComparison.Ordinal))
                 {
-                    var expression = $"(make-instance {prettyPrintedInstance})";
-                    _environment.Eval(expression);
+                    Eval($"(make-instance {prettyPrintedInstance})");
                 }
             }
-
-            // Module is now fully loaded, move to next module
         }
 
         return true;
     }
 
-
-    #endregion
-
-
     public string[] GetFacts(string moduleName)
-    { 
-        List<string> result = new List<string>();
+    {
+        EnsureAlive();
 
-        // Set the current module
-        _environment.Eval($"(set-current-module {moduleName})");
-
-        // retrieve the list of facts from the specified module
-        string getFactsCommand = $"(get-fact-list {moduleName})";
-        MultifieldValue list = (MultifieldValue)_environment.Eval(getFactsCommand);
-
-        // iterate over the list of fact 
-        foreach (FactAddressValue fact in list)
+        if (ClipsNative.Clips_GetFactPPForms(_environment, moduleName, out IntPtr formsPtr, out int count) == 0)
         {
-            var index = fact.FactIndex; // FIX: use property, not method
-
-            // pretty-print the clips instance to the provided logical name associated 
-            // with the previously added router (within the constructor)
-            _environment.Eval($"(ppfact {index} {MemoryRouter.LOGICAL_NAME}))");
-
-            // capture the pretty-print representation of the instance
-            // (car (model bmw) (color blue) ...)
-            string prettyFact = _memoryRouter.GetCapturedOutput().Replace("\r", "").Replace("\n", "");
-            result.Add(prettyFact);
+            throw new InvalidOperationException($"Failed to get facts for module '{moduleName}'");
         }
 
-        return result.ToArray();
+        try
+        {
+            return ClipsValueMapper.ReadStringArray(formsPtr, count)
+                .Select(s => s.Replace("\r", string.Empty).Replace("\n", string.Empty))
+                .ToArray();
+        }
+        finally
+        {
+            ClipsNative.Clips_FreeStringArray(formsPtr, count);
+        }
     }
 
     public string[] GetInstances(string moduleName)
     {
-        var result = new List<string>();
+        EnsureAlive();
 
-        // Set the current module
-        _environment.Eval($"(set-current-module {moduleName})");
-
-
-        // Retrieve a list of instances from the specified module. the method has been previously defined within the constcutor 
-        string get_instance_list = $"({Constants.GET_INSTANCE_LIST} {moduleName})";
-        MultifieldValue instances = (MultifieldValue) (_environment.Eval(get_instance_list));
-
-        foreach (var instance in instances)
+        if (ClipsNative.Clips_GetInstancePPForms(_environment, moduleName, out IntPtr formsPtr, out int count) == 0)
         {
-            // pretty-print the clips instance to the provided logical name associated 
-            // with the previously added router (within the constructor)
-            var pretty_print_instance_to_router = $"(send {instance} {Constants.PRETTY_PRINT_INSTANCE_TO_ROUTER} {MemoryRouter.LOGICAL_NAME})";
-            _environment.Eval(pretty_print_instance_to_router);
-
-            // capture the pretty-print representation of the instance
-            // gen1 of CLASS1 (slot1 val1) (slot2 val2) ...
-            string prettyInstance = _memoryRouter.GetCapturedOutput().Replace("\r", "").Replace("\n", "");
-            result.Add(prettyInstance);
+            throw new InvalidOperationException($"Failed to get instances for module '{moduleName}'");
         }
-
-        return result.ToArray();
-    }
-    
-    public string[] GetModules()
-    {
-        var result = new List<string>();
 
         try
         {
-            // Get the list of all modules
-            MultifieldValue modules = (MultifieldValue)_environment.Eval("(list-defmodules)");
+            return ClipsValueMapper.ReadStringArray(formsPtr, count)
+                .Select(s => s.Replace("\r", string.Empty).Replace("\n", string.Empty))
+                .ToArray();
+        }
+        finally
+        {
+            ClipsNative.Clips_FreeStringArray(formsPtr, count);
+        }
+    }
 
-            foreach (var module in modules)
+    public string[] GetModules()
+    {
+        EnsureAlive();
+
+        try
+        {
+            if (ClipsNative.Clips_GetModuleNames(_environment, out IntPtr namesPtr, out int count) == 0)
             {
-                if (module != null)
-                {
-                    result.Add(module.ToString()!);
-                }
+                return Array.Empty<string>();
+            }
+
+            try
+            {
+                return ClipsValueMapper.ReadStringArray(namesPtr, count);
+            }
+            finally
+            {
+                ClipsNative.Clips_FreeStringArray(namesPtr, count);
             }
         }
         catch (Exception e)
         {
             _logger.LogError(e, "Failed to get module list");
+            return Array.Empty<string>();
         }
-        
-
-        return result.ToArray();
     }
 
-
-    /// <summary>
-    /// Creates a binary restorable snapshot of the engine state (instances and facts).
-    /// </summary>
     public byte[] BinaryCapture()
     {
-        BinaryEnvironmentCapture binaryCapture = new BinaryEnvironmentCapture();
-        
+        var binaryCapture = new BinaryEnvironmentCapture();
         string? tempInstancesPath = null;
         string? tempFactsPath = null;
 
         try
         {
-            // Create temporary files for instances and facts
             tempInstancesPath = Path.GetTempFileName();
             tempFactsPath = Path.GetTempFileName();
 
-            // Save instances to temporary file
-            bool instancesSaved = BsaveInstances(tempInstancesPath);
-            if (instancesSaved && File.Exists(tempInstancesPath))
+            if (BsaveInstances(tempInstancesPath) && File.Exists(tempInstancesPath))
             {
                 binaryCapture.InstancesData = File.ReadAllBytes(tempInstancesPath);
             }
 
-            // Save facts to temporary file
-            bool factsSaved = BsaveFacts(tempFactsPath);
-            if (factsSaved && File.Exists(tempFactsPath))
+            if (BsaveFacts(tempFactsPath) && File.Exists(tempFactsPath))
             {
                 binaryCapture.FactsData = File.ReadAllBytes(tempFactsPath);
             }
 
-            // Serialize BinaryEnvironmentCapture to bytes using Newtonsoft.Json
             string jsonString = JsonConvert.SerializeObject(binaryCapture);
-            byte[] serializedBytes = Encoding.UTF8.GetBytes(jsonString);
-
             _logger.LogInformation("Binary capture completed successfully");
-            return serializedBytes;
+            return Encoding.UTF8.GetBytes(jsonString);
         }
         catch (Exception e)
         {
@@ -383,76 +290,46 @@ public class ManagedCLIPSEnvironment : IManagedCLIPSEnvironment, IDisposable
         }
         finally
         {
-            // Clean up temporary files
-            try
-            {
-                if (tempInstancesPath != null && File.Exists(tempInstancesPath))
-                {
-                    File.Delete(tempInstancesPath);
-                }
-                if (tempFactsPath != null && File.Exists(tempFactsPath))
-                {
-                    File.Delete(tempFactsPath);
-                }
-            }
-            catch (Exception cleanupEx)
-            {
-                _logger.LogWarning(cleanupEx, "Failed to clean up temporary files during binary capture");
-            }
+            TryDelete(tempInstancesPath);
+            TryDelete(tempFactsPath);
         }
     }
 
-    /// <summary>
-    /// Restores the engine from a binary checkpoint.
-    /// </summary>
     public bool BinaryRestore(byte[] binaryCaptureData)
     {
         if (binaryCaptureData == null)
+        {
             throw new ArgumentNullException(nameof(binaryCaptureData));
+        }
 
-        BinaryEnvironmentCapture? binaryCapture = null;
         string? tempInstancesPath = null;
         string? tempFactsPath = null;
 
         try
         {
-            // Deserialize byte array back to BinaryEnvironmentCapture using Newtonsoft.Json
             string jsonString = Encoding.UTF8.GetString(binaryCaptureData);
-            binaryCapture = JsonConvert.DeserializeObject<BinaryEnvironmentCapture>(jsonString);
-
+            BinaryEnvironmentCapture? binaryCapture = JsonConvert.DeserializeObject<BinaryEnvironmentCapture>(jsonString);
             if (binaryCapture == null)
             {
                 _logger.LogError("Failed to deserialize binary capture data");
                 return false;
             }
 
-            // Create temporary files for instances and facts
             tempInstancesPath = Path.GetTempFileName();
             tempFactsPath = Path.GetTempFileName();
 
-            // Write binary data to temporary files
-            if (binaryCapture.InstancesData != null && binaryCapture.InstancesData.Length > 0)
+            if (binaryCapture.InstancesData is { Length: > 0 })
             {
                 File.WriteAllBytes(tempInstancesPath, binaryCapture.InstancesData);
-                
-                // Load instances from binary file using bload-instances
-                string escapedInstancesPath = tempInstancesPath.Replace("\\", "\\\\");
-                string bloadInstancesCommand = $"(bload-instances \"{escapedInstancesPath}\")";
-                
-                _logger.LogInformation("Restoring instances from binary file");
-                _environment.Eval(bloadInstancesCommand);
+                string escaped = tempInstancesPath.Replace("\\", "\\\\", StringComparison.Ordinal);
+                Eval($"(bload-instances \"{escaped}\")");
             }
 
-            if (binaryCapture.FactsData != null && binaryCapture.FactsData.Length > 0)
+            if (binaryCapture.FactsData is { Length: > 0 })
             {
                 File.WriteAllBytes(tempFactsPath, binaryCapture.FactsData);
-                
-                // Load facts from binary file using bload-facts
-                string escapedFactsPath = tempFactsPath.Replace("\\", "\\\\");
-                string bloadFactsCommand = $"(bload-facts \"{escapedFactsPath}\")";
-                
-                _logger.LogInformation("Restoring facts from binary file");
-                _environment.Eval(bloadFactsCommand);
+                string escaped = tempFactsPath.Replace("\\", "\\\\", StringComparison.Ordinal);
+                Eval($"(bload-facts \"{escaped}\")");
             }
 
             _logger.LogInformation("Binary restore completed successfully");
@@ -465,44 +342,22 @@ public class ManagedCLIPSEnvironment : IManagedCLIPSEnvironment, IDisposable
         }
         finally
         {
-            // Clean up temporary files
-            try
-            {
-                if (tempInstancesPath != null && File.Exists(tempInstancesPath))
-                {
-                    File.Delete(tempInstancesPath);
-                }
-                if (tempFactsPath != null && File.Exists(tempFactsPath))
-                {
-                    File.Delete(tempFactsPath);
-                }
-            }
-            catch (Exception cleanupEx)
-            {
-                _logger.LogWarning(cleanupEx, "Failed to clean up temporary files during binary restore");
-            }
+            TryDelete(tempInstancesPath);
+            TryDelete(tempFactsPath);
         }
     }
 
-
-    /// <summary>
-    /// Saves instances to a binary file using CLIPS bsave-instances command.
-    /// </summary>
     public bool BsaveInstances(string filePath)
     {
         if (string.IsNullOrEmpty(filePath))
+        {
             throw new ArgumentException("File path cannot be null or empty", nameof(filePath));
+        }
 
         try
         {
-            // Escape backslashes for CLIPS
-            string escapedPath = filePath.Replace("\\", "\\\\");
-            string bsaveCommand = $"(bsave-instances \"{escapedPath}\")";
-
-            _logger.LogInformation("Saving instances to binary file: {FilePath}", filePath);
-            _environment.Eval(bsaveCommand);
-
-            _logger.LogInformation("Successfully saved instances to binary file: {FilePath}", filePath);
+            string escapedPath = filePath.Replace("\\", "\\\\", StringComparison.Ordinal);
+            Eval($"(bsave-instances \"{escapedPath}\")");
             return true;
         }
         catch (Exception e)
@@ -512,24 +367,17 @@ public class ManagedCLIPSEnvironment : IManagedCLIPSEnvironment, IDisposable
         }
     }
 
-    /// <summary>
-    /// Saves facts to a binary file using CLIPS bsave-facts command.
-    /// </summary>
     public bool BsaveFacts(string filePath)
     {
         if (string.IsNullOrEmpty(filePath))
+        {
             throw new ArgumentException("File path cannot be null or empty", nameof(filePath));
+        }
 
         try
         {
-            // Escape backslashes for CLIPS
-            string escapedPath = filePath.Replace("\\", "\\\\");
-            string bsaveCommand = $"(bsave-facts \"{escapedPath}\")";
-
-            _logger.LogInformation("Saving facts to binary file: {FilePath}", filePath);
-            _environment.Eval(bsaveCommand);
-
-            _logger.LogInformation("Successfully saved facts to binary file: {FilePath}", filePath);
+            string escapedPath = filePath.Replace("\\", "\\\\", StringComparison.Ordinal);
+            Eval($"(bsave-facts \"{escapedPath}\")");
             return true;
         }
         catch (Exception e)
@@ -541,6 +389,35 @@ public class ManagedCLIPSEnvironment : IManagedCLIPSEnvironment, IDisposable
 
     public void Dispose()
     {
-        _environment?.Dispose();
+        if (_environment != IntPtr.Zero)
+        {
+            _ = ClipsNative.Clips_DestroyEnvironment(_environment);
+            _environment = IntPtr.Zero;
+        }
+
+        GC.SuppressFinalize(this);
+    }
+
+    private void EnsureAlive()
+    {
+        if (_environment == IntPtr.Zero)
+        {
+            throw new ObjectDisposedException(nameof(ManagedCLIPSEnvironment));
+        }
+    }
+
+    private void TryDelete(string? path)
+    {
+        try
+        {
+            if (path != null && File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch (Exception cleanupEx)
+        {
+            _logger.LogWarning(cleanupEx, "Failed to clean up temporary file {Path}", path);
+        }
     }
 }
