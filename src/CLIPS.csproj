@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>ManagedDotNet.CLIPS</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- Package metadata -->
+    <PackageId>ManagedDotNet.CLIPS</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Faraz Zabihian</Authors>
+    <Company>N/A</Company>
+    <Title>ManagedDotNet.CLIPS</Title>
+    <Description>
+      Managed .NET wrapper around CLIPS 6.4 (C++/CLI CLIPSNET): pooled environments,
+      typed Eval results, fact assert/fire, and binary capture/restore for rules engines.
+      Windows x64 only.
+    </Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/FarazLabs/ManagedDotNet.CLIPS</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/FarazLabs/ManagedDotNet.CLIPS</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>
+      CLIPS,RulesEngine,ExpertSystem,CLIPSNET,ManagedCLIPS,Net8,Windows,x64
+    </PackageTags>
+
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageOutputPath>nupkgs</PackageOutputPath>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <NeutralLanguage>en</NeutralLanguage>
+    <PublishToGitHubPackages>true</PublishToGitHubPackages>
+
+    <!-- Enable recommended code analysis -->
+    <AnalysisMode>Recommended</AnalysisMode>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors>CS8600;CS8602;CS8604;CS8509;CS8629</WarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.1.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="8.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\native\CLIPSCLRWrapper\CLIPSCLRWrapper.vcxproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+</Project>
