@@ -55,10 +55,16 @@ jobs:
         run: |
           cmake -S native/clips -B native/clips/build -A x64
           cmake --build native/clips/build --config Release
-          New-Item -ItemType Directory -Force -Path native/clips/build/native/win-x64 | Out-Null
-          $dll = Get-ChildItem -Path native/clips/build -Recurse -Filter clips.dll | Select-Object -First 1
-          if (-not $dll) { throw "clips.dll not found" }
-          Copy-Item $dll.FullName native/clips/build/native/win-x64/clips.dll -Force
+          $dest = "native/clips/build/native/win-x64/clips.dll"
+          if (-not (Test-Path $dest)) {
+            New-Item -ItemType Directory -Force -Path (Split-Path $dest) | Out-Null
+            $dll = Get-ChildItem -Path native/clips/build -Recurse -Filter clips.dll |
+              Where-Object { $_.FullName -notmatch '[\\/]native[\\/]' } |
+              Select-Object -First 1
+            if (-not $dll) { throw "clips.dll not found" }
+            Copy-Item $dll.FullName $dest -Force
+          }
+          Test-Path $dest | ForEach-Object { if (-not $_) { throw "clips.dll missing at $dest" } }
 
       - name: Test
         run: dotnet test ManagedDotNet.CLIPS.sln -c Release --verbosity normal
