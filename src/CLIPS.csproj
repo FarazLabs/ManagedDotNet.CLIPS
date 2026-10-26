@@ -41,7 +41,7 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <WarningsAsErrors>CS8600;CS8602;CS8604;CS8509;CS8629</WarningsAsErrors>
 
-    <NativeOutDir>$(MSBuildThisFileDirectory)..\native\clips\build\native</NativeOutDir>
+    <NativeOutDir>$(MSBuildThisFileDirectory)../native/clips/build/native</NativeOutDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -60,20 +60,20 @@
     <InternalsVisibleTo Include="CLIPS.Tests" />
   </ItemGroup>
 
-  <!-- Copy / pack native libs when present -->
-  <ItemGroup Condition="Exists('$(NativeOutDir)\win-x64\clips.dll')">
-    <None Include="$(NativeOutDir)\win-x64\clips.dll"
+  <!-- Copy / pack native libs when present (path separators work on Windows + Linux CI) -->
+  <ItemGroup Condition="Exists('$(NativeOutDir)/win-x64/clips.dll')">
+    <None Include="$(NativeOutDir)/win-x64/clips.dll"
           Pack="true"
           PackagePath="runtimes/win-x64/native/"
           CopyToOutputDirectory="PreserveNewest"
-          Link="runtimes\win-x64\native\clips.dll" />
+          Link="runtimes/win-x64/native/clips.dll" />
   </ItemGroup>
-  <ItemGroup Condition="Exists('$(NativeOutDir)\linux-x64\libclips.so')">
-    <None Include="$(NativeOutDir)\linux-x64\libclips.so"
+  <ItemGroup Condition="Exists('$(NativeOutDir)/linux-x64/libclips.so')">
+    <None Include="$(NativeOutDir)/linux-x64/libclips.so"
           Pack="true"
           PackagePath="runtimes/linux-x64/native/"
           CopyToOutputDirectory="PreserveNewest"
-          Link="runtimes\linux-x64\native\libclips.so" />
+          Link="runtimes/linux-x64/native/libclips.so" />
   </ItemGroup>
 
 </Project>

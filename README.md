@@ -12,11 +12,30 @@ Provides pooled rules-engine environments, typed `Eval` results, fact assert/fir
 
 ## Install
 
+Published to **GitHub Packages** on every push to `main` (package includes both `linux-x64` and `win-x64` natives).
+
+Add a `nuget.config` (or equivalent) pointing at the FarazLabs feed:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <add key="github" value="https://nuget.pkg.github.com/FarazLabs/index.json" />
+  </packageSources>
+  <packageSourceCredentials>
+    <github>
+      <add key="Username" value="YOUR_GITHUB_USERNAME" />
+      <add key="ClearTextPassword" value="YOUR_GITHUB_PAT" />
+    </github>
+  </packageSourceCredentials>
+</configuration>
+```
+
+PAT needs at least `read:packages`. Then:
+
 ```bash
 dotnet add package ManagedDotNet.CLIPS
 ```
-
-The NuGet package includes RID-specific native binaries under `runtimes/{rid}/native/` when they were present at pack time.
 
 ## Quick start
 

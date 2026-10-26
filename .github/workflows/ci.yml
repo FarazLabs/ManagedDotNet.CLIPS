@@ -5,6 +5,10 @@ on:
     branches: [main, master]
   pull_request:
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   linux:
     runs-on: ubuntu-latest
@@ -21,14 +25,17 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq build-essential
           make -C native/clips
-          mkdir -p native/clips/build/native/linux-x64
           test -f native/clips/build/native/linux-x64/libclips.so
 
       - name: Test
         run: dotnet test ManagedDotNet.CLIPS.sln -c Release --verbosity normal
 
-      - name: Pack
-        run: dotnet pack src/CLIPS.csproj -c Release --no-build
+      - name: Upload linux native
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-linux-x64
+          path: native/clips/build/native/linux-x64/libclips.so
+          if-no-files-found: error
 
   windows:
     runs-on: windows-latest
@@ -56,5 +63,50 @@ jobs:
       - name: Test
         run: dotnet test ManagedDotNet.CLIPS.sln -c Release --verbosity normal
 
+      - name: Upload windows native
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-win-x64
+          path: native/clips/build/native/win-x64/clips.dll
+          if-no-files-found: error
+
+  publish:
+    needs: [linux, windows]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Download linux native
+        uses: actions/download-artifact@v4
+        with:
+          name: native-linux-x64
+          path: native/clips/build/native/linux-x64
+
+      - name: Download windows native
+        uses: actions/download-artifact@v4
+        with:
+          name: native-win-x64
+          path: native/clips/build/native/win-x64
+
+      - name: Verify natives
+        run: |
+          test -f native/clips/build/native/linux-x64/libclips.so
+          test -f native/clips/build/native/win-x64/clips.dll
+
       - name: Pack
-        run: dotnet pack src/CLIPS.csproj -c Release --no-build
+        run: |
+          dotnet pack src/CLIPS.csproj -c Release -p:GeneratePackageOnBuild=false
+          ls -la src/nupkgs
+
+      - name: Push to GitHub Packages
+        run: |
+          dotnet nuget push "src/nupkgs/*.nupkg" \
+            --source "https://nuget.pkg.github.com/FarazLabs/index.json" \
+            --api-key "${{ secrets.GITHUB_TOKEN }}" \
+            --skip-duplicate
