@@ -73,6 +73,8 @@ dotnet build ManagedDotNet.CLIPS.sln -c Release
 
 Building the managed project also builds `CLIPSCLRWrapper` (requires MSBuild C++/CLI on Windows).
 
+A Windows GitHub Actions workflow lives at `.github/workflows/ci.yml` (checkout locally). Commit/push it after authenticating `gh` with the `workflow` scope if Actions is not yet on the remote.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
