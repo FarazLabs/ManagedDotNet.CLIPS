@@ -40,20 +40,20 @@ dotnet add package ManagedDotNet.CLIPS
 ## Quick start
 
 ```csharp
-using ManagedDotNet.CLIPS;
-using ManagedDotNet.CLIPS.Abstractions;
-using ManagedDotNet.CLIPS.Api;
-using ManagedDotNet.CLIPS.Api.Values;
+using ManagedDotNet.Clips;
+using ManagedDotNet.Clips.Abstractions;
+using ManagedDotNet.Clips.Api;
+using ManagedDotNet.Clips.Api.Values;
 
-services.AddManagedCLIPSPool("dialogue", sp => sp.GetRequiredService<MyConfigurer>());
+services.AddClipsPool("dialogue", sp => sp.GetRequiredService<MyConfigurer>());
 
-var pool = sp.GetRequiredKeyedService<IManagedCLIPSEnvironmentPool>("dialogue");
-IManagedCLIPSEnvironment engine = pool.Rent();
+var pool = sp.GetRequiredKeyedService<IClipsPool>("dialogue");
+IClips engine = pool.Rent();
 try
 {
     engine.Assert(myFact);
     engine.Fire();
-    var result = engine.Eval<CLIPSIntegerValue>("(+ 1 2)");
+    var result = engine.Eval<ClipsIntegerValue>("(+ 1 2)");
 }
 finally
 {
@@ -101,7 +101,7 @@ dotnet test ManagedDotNet.CLIPS.sln -c Release
 
 | Path | Role |
 |------|------|
-| `src/` | Managed library (`ManagedDotNet.CLIPS.*`) + P/Invoke interop |
+| `src/` | Managed library (`ManagedDotNet.Clips.*`) + P/Invoke interop |
 | `native/clips/` | CMake/Makefile + P/Invoke shim |
 | `native/CLIPSCLRWrapper/Source/CLIPS/` | Vendored CLIPS 6.4 C sources |
 | `tests/` | Smoke tests |
@@ -110,12 +110,12 @@ dotnet test ManagedDotNet.CLIPS.sln -c Release
 
 | Namespace | Contents |
 |-----------|----------|
-| `ManagedDotNet.CLIPS` | DI extensions |
-| `ManagedDotNet.CLIPS.Abstractions` | `IFact`, `IEnvironmentConfigurer` |
-| `ManagedDotNet.CLIPS.Api` | Environment / pool APIs, captures, value base types |
-| `ManagedDotNet.CLIPS.Api.Values` | Typed CLIPS values |
-| `ManagedDotNet.CLIPS.Core` | `ManagedCLIPSEnvironment` implementation |
-| `ManagedDotNet.CLIPS.Interop` | P/Invoke declarations (internal) |
+| `ManagedDotNet.Clips` | DI extensions |
+| `ManagedDotNet.Clips.Abstractions` | `IFact`, `IClipsConfigurer` |
+| `ManagedDotNet.Clips.Api` | Environment / pool APIs, captures, value base types |
+| `ManagedDotNet.Clips.Api.Values` | Typed CLIPS values |
+| `ManagedDotNet.Clips.Core` | `Clips` implementation (qualify as `Core.Clips` from the root namespace) |
+| `ManagedDotNet.Clips.Interop` | P/Invoke declarations (internal) |
 
 ## License
 

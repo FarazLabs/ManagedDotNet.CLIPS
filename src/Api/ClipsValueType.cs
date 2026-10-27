@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ManagedDotNet.CLIPS.Api
+namespace ManagedDotNet.Clips.Api
 {
-    public enum CLIPSValueType
+    public enum ClipsValueType
     {
         UNKNOWN,
         FLOAT,

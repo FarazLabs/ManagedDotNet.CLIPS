@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace ManagedDotNet.CLIPS.Interop;
+namespace ManagedDotNet.Clips.Interop;
 
 internal static partial class ClipsNative
 {

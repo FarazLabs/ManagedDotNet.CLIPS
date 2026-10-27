@@ -1,13 +1,13 @@
-namespace ManagedDotNet.CLIPS.Api;
+namespace ManagedDotNet.Clips.Api;
 
-public class ModuleCapture
+public class ModuleSnapshot
 {
     public string ModuleName { get; set; } = string.Empty;
     public string[] Facts { get; set; } 
     public string[] Instances { get; set; } 
     public int CaptureOrder { get; set; }
 
-    public ModuleCapture(string name, string[] facts, string[] instances, int captureOrder)
+    public ModuleSnapshot(string name, string[] facts, string[] instances, int captureOrder)
     {
         ModuleName = name;
         Facts = facts;

@@ -1,32 +1,32 @@
 using System.Runtime.InteropServices;
-using ManagedDotNet.CLIPS.Api;
-using ManagedDotNet.CLIPS.Api.Values;
+using ManagedDotNet.Clips.Api;
+using ManagedDotNet.Clips.Api.Values;
 
-namespace ManagedDotNet.CLIPS.Interop;
+namespace ManagedDotNet.Clips.Interop;
 
 internal static class ClipsValueMapper
 {
-    public static CLIPSValue ToManaged(ref ClipsPInvokeValue native)
+    public static ClipsValue ToManaged(ref ClipsPInvokeValue native)
     {
         return (ClipsPInvokeType)native.type switch
         {
-            ClipsPInvokeType.Float => new CLIPSFloatValue(native.floatValue),
-            ClipsPInvokeType.Integer => new CLIPSIntegerValue(native.integerValue),
-            ClipsPInvokeType.Symbol => new CLIPSSymbolValue(ReadUtf8(native.stringValue) ?? string.Empty),
-            ClipsPInvokeType.String => new CLIPSStringValue(ReadUtf8(native.stringValue) ?? string.Empty),
-            ClipsPInvokeType.InstanceName => new CLIPSInstanceNameValue(ReadUtf8(native.stringValue) ?? string.Empty),
+            ClipsPInvokeType.Float => new ClipsFloatValue(native.floatValue),
+            ClipsPInvokeType.Integer => new ClipsIntegerValue(native.integerValue),
+            ClipsPInvokeType.Symbol => new ClipsSymbolValue(ReadUtf8(native.stringValue) ?? string.Empty),
+            ClipsPInvokeType.String => new ClipsStringValue(ReadUtf8(native.stringValue) ?? string.Empty),
+            ClipsPInvokeType.InstanceName => new ClipsInstanceNameValue(ReadUtf8(native.stringValue) ?? string.Empty),
             ClipsPInvokeType.Multifield => MapMultifield(ref native),
-            ClipsPInvokeType.FactAddress => new CLIPSFactAddressValue(native.factIndex),
-            ClipsPInvokeType.InstanceAddress => new CLIPSInstanceAddressValue(ReadUtf8(native.stringValue) ?? string.Empty),
-            ClipsPInvokeType.Void => new CLIPSVoidValue(),
-            ClipsPInvokeType.ExternalAddress => new CLIPSUnsupportedValue(CLIPSValueType.EXTERNAL_ADDRESS),
-            _ => new CLIPSUnsupportedValue(CLIPSValueType.UNKNOWN),
+            ClipsPInvokeType.FactAddress => new ClipsFactAddressValue(native.factIndex),
+            ClipsPInvokeType.InstanceAddress => new ClipsInstanceAddressValue(ReadUtf8(native.stringValue) ?? string.Empty),
+            ClipsPInvokeType.Void => new ClipsVoidValue(),
+            ClipsPInvokeType.ExternalAddress => new ClipsUnsupportedValue(ClipsValueType.EXTERNAL_ADDRESS),
+            _ => new ClipsUnsupportedValue(ClipsValueType.UNKNOWN),
         };
     }
 
-    private static CLIPSMultifieldValue MapMultifield(ref ClipsPInvokeValue native)
+    private static ClipsMultifieldValue MapMultifield(ref ClipsPInvokeValue native)
     {
-        var items = new List<CLIPSValue>(native.multifieldLength);
+        var items = new List<ClipsValue>(native.multifieldLength);
         if (native.multifieldItems != IntPtr.Zero && native.multifieldLength > 0)
         {
             int size = Marshal.SizeOf<ClipsPInvokeValue>();
@@ -38,7 +38,7 @@ internal static class ClipsValueMapper
             }
         }
 
-        return new CLIPSMultifieldValue(items);
+        return new ClipsMultifieldValue(items);
     }
 
     public static string[] ReadStringArray(IntPtr arrayPtr, int count)

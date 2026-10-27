@@ -108,7 +108,7 @@ foreach (var instance in instanceList.AsList())
 
 ### Before (Exposing PrimitiveValue)
 ```csharp
-public interface IManagedCLIPSEnvironment
+public interface IClips
 {
     PrimitiveValue Eval(string expression);
 }
@@ -116,7 +116,7 @@ public interface IManagedCLIPSEnvironment
 
 ### After (Using CLIPSPrimitiveValue Wrapper)
 ```csharp
-public interface IManagedCLIPSEnvironment
+public interface IClips
 {
     CLIPSPrimitiveValue Eval(string expression);
 }

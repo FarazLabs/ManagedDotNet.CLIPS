@@ -1,4 +1,4 @@
-namespace ManagedDotNet.CLIPS.Core;
+namespace ManagedDotNet.Clips.Core;
 
 internal static class Constants
 {

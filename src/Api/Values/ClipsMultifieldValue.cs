@@ -1,16 +1,16 @@
-namespace ManagedDotNet.CLIPS.Api.Values;
+namespace ManagedDotNet.Clips.Api.Values;
 
-public class CLIPSMultifieldValue : CLIPSValue, IEnumerable<CLIPSValue>
+public class ClipsMultifieldValue : ClipsValue, IEnumerable<ClipsValue>
 {
-    private readonly IReadOnlyList<CLIPSValue> _items;
+    private readonly IReadOnlyList<ClipsValue> _items;
 
-    public override CLIPSValueType Type => CLIPSValueType.MULTIFIELD;
+    public override ClipsValueType Type => ClipsValueType.MULTIFIELD;
 
     public int Count => _items.Count;
 
     public bool IsEmpty => Count == 0;
 
-    public CLIPSValue this[int index]
+    public ClipsValue this[int index]
     {
         get
         {
@@ -23,14 +23,14 @@ public class CLIPSMultifieldValue : CLIPSValue, IEnumerable<CLIPSValue>
         }
     }
 
-    internal CLIPSMultifieldValue(IReadOnlyList<CLIPSValue> items)
+    internal ClipsMultifieldValue(IReadOnlyList<ClipsValue> items)
     {
         _items = items;
     }
 
-    public IEnumerator<CLIPSValue> GetEnumerator() => _items.GetEnumerator();
+    public IEnumerator<ClipsValue> GetEnumerator() => _items.GetEnumerator();
 
     System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
 
-    public List<CLIPSValue> AsList() => _items.ToList();
+    public List<ClipsValue> AsList() => _items.ToList();
 }

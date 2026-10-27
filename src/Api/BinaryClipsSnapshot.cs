@@ -1,9 +1,9 @@
-namespace ManagedDotNet.CLIPS.Api;
+namespace ManagedDotNet.Clips.Api;
 
 /// <summary>
 /// Represents a binary snapshot of the CLIPS environment state (instances and facts).
 /// </summary>
-public class BinaryEnvironmentCapture
+public class BinaryClipsSnapshot
 {
     /// <summary>
     /// Binary data representing saved instances from CLIPS bsave-instances command.

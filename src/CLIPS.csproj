@@ -4,16 +4,16 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>ManagedDotNet.CLIPS</RootNamespace>
+    <RootNamespace>ManagedDotNet.Clips</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DisableImplicitNamespaceImports>false</DisableImplicitNamespaceImports>
 
     <PackageId>ManagedDotNet.CLIPS</PackageId>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <Authors>Faraz Zabihian</Authors>
     <Company>N/A</Company>
-    <Title>ManagedDotNet.CLIPS</Title>
+    <Title>ManagedDotNet.Clips</Title>
     <Description>
       Managed .NET 8 wrapper around CLIPS 6.4 via P/Invoke (libclips / clips.dll).
       Pooled environments, typed Eval results, fact assert/fire, and binary capture/restore.

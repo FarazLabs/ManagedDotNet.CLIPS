@@ -1,24 +1,24 @@
-using ManagedDotNet.CLIPS.Abstractions;
+using ManagedDotNet.Clips.Abstractions;
 
-namespace ManagedDotNet.CLIPS.Api;
+namespace ManagedDotNet.Clips.Api;
 
-public interface IManagedCLIPSEnvironment
+public interface IClips
 {
     /// <summary>
     /// Evaluates a CLIPS expression in the current environment.
     /// </summary>
-    public CLIPSValue Eval(string expression);
+    public ClipsValue Eval(string expression);
 
     /// <summary>
     /// Evaluates a CLIPS expression and returns the result cast to the specified CLIPS value type.
     /// </summary>
-    /// <typeparam name="T">The CLIPS value type to cast the result to (e.g., CLIPSIntegerValue, CLIPSStringValue, etc.)</typeparam>
+    /// <typeparam name="T">The CLIPS value type to cast the result to (e.g., ClipsIntegerValue, ClipsStringValue, etc.)</typeparam>
     /// <param name="expression">A valid CLIPS expression (e.g., <c>(+ 1 2)</c>).</param>
     /// <returns>The result cast to the specified CLIPS value type.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="expression"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if <paramref name="expression"/> is empty or invalid.</exception>
     /// <exception cref="InvalidOperationException">Thrown if the result cannot be cast to the specified type.</exception>
-    public T Eval<T>(string expression) where T : CLIPSValue;
+    public T Eval<T>(string expression) where T : ClipsValue;
 
 
     /// <summary>
@@ -60,14 +60,14 @@ public interface IManagedCLIPSEnvironment
     /// Creates a restorable snapshot of the engine state
     /// </summary>
     /// <returns>
-    /// A <see cref="Api.EnvironmentCapture"/> capturing the current state (i.e., facts and instances) for the specified modules
+    /// A <see cref="Api.ClipsSnapshot"/> capturing the current state (i.e., facts and instances) for the specified modules
     /// </returns>
     /// <exception cref="ArgumentException">Thrown if any specified module name is not found in the environment.</exception>
     /// <remarks>
     /// Use <see cref="Restore"/> to revert the engine to this state later.
     /// Modules are captured in the order specified and restored in the same order.
     /// </remarks>
-    public EnvironmentCapture Capture();
+    public ClipsSnapshot Capture();
 
 
     /// <summary>
@@ -82,7 +82,7 @@ public interface IManagedCLIPSEnvironment
     /// <remarks>
     /// Restoring replaces current working memory with the checkpoint's contents.
     /// </remarks>
-    public bool Restore(EnvironmentCapture environmentCapture);
+    public bool Restore(ClipsSnapshot environmentCapture);
 
 
 

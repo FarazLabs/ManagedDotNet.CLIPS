@@ -1,19 +1,19 @@
 using System.Text;
-using ManagedDotNet.CLIPS.Abstractions;
-using ManagedDotNet.CLIPS.Api;
-using ManagedDotNet.CLIPS.Api.Values;
-using ManagedDotNet.CLIPS.Interop;
+using ManagedDotNet.Clips.Abstractions;
+using ManagedDotNet.Clips.Api;
+using ManagedDotNet.Clips.Api.Values;
+using ManagedDotNet.Clips.Interop;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace ManagedDotNet.CLIPS.Core;
+namespace ManagedDotNet.Clips.Core;
 
-public class ManagedCLIPSEnvironment : IManagedCLIPSEnvironment, IDisposable
+public class Clips : IClips, IDisposable
 {
     private readonly ILogger _logger;
     private IntPtr _environment;
 
-    internal ManagedCLIPSEnvironment(ILogger logger)
+    internal Clips(ILogger logger)
     {
         _logger = logger;
         _environment = ClipsNative.Clips_CreateEnvironment();
@@ -23,7 +23,7 @@ public class ManagedCLIPSEnvironment : IManagedCLIPSEnvironment, IDisposable
         }
     }
 
-    public CLIPSValue Eval(string expression)
+    public ClipsValue Eval(string expression)
     {
         if (string.IsNullOrEmpty(expression))
         {
@@ -47,9 +47,9 @@ public class ManagedCLIPSEnvironment : IManagedCLIPSEnvironment, IDisposable
         }
     }
 
-    public T Eval<T>(string expression) where T : CLIPSValue
+    public T Eval<T>(string expression) where T : ClipsValue
     {
-        CLIPSValue result = Eval(expression);
+        ClipsValue result = Eval(expression);
 
         if (result is T castResult)
         {
@@ -95,25 +95,25 @@ public class ManagedCLIPSEnvironment : IManagedCLIPSEnvironment, IDisposable
 
     public bool Reset()
     {
-        _logger.LogInformation("{Name}: resetting", nameof(IManagedCLIPSEnvironment));
+        _logger.LogInformation("{Name}: resetting", nameof(IClips));
 
         try
         {
             EnsureAlive();
             ClipsNative.Clips_Reset(_environment);
-            _logger.LogInformation("{Name}: reset completed", nameof(IManagedCLIPSEnvironment));
+            _logger.LogInformation("{Name}: reset completed", nameof(IClips));
             return true;
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "{Name}: failed to reset the environment", nameof(IManagedCLIPSEnvironment));
+            _logger.LogError(e, "{Name}: failed to reset the environment", nameof(IClips));
             return false;
         }
     }
 
     public void Assert(IFact fact)
     {
-        _logger.LogInformation("{Name}: asserting", nameof(IManagedCLIPSEnvironment));
+        _logger.LogInformation("{Name}: asserting", nameof(IClips));
         EnsureAlive();
 
         foreach (string f in fact.Serialize())
@@ -127,20 +127,20 @@ public class ManagedCLIPSEnvironment : IManagedCLIPSEnvironment, IDisposable
 
     public void Fire()
     {
-        _logger.LogInformation("{Name}: firing", nameof(IManagedCLIPSEnvironment));
+        _logger.LogInformation("{Name}: firing", nameof(IClips));
         EnsureAlive();
         ClipsNative.Clips_Run(_environment, -1);
     }
 
-    public EnvironmentCapture Capture()
+    public ClipsSnapshot Capture()
     {
         string[] modules = GetModules();
-        var capture = new EnvironmentCapture();
+        var capture = new ClipsSnapshot();
 
         for (int i = 0; i < modules.Length; i++)
         {
             string moduleName = modules[i];
-            var moduleCapture = new ModuleCapture(
+            var moduleCapture = new ModuleSnapshot(
                 name: moduleName,
                 facts: GetFacts(moduleName),
                 instances: GetInstances(moduleName),
@@ -152,7 +152,7 @@ public class ManagedCLIPSEnvironment : IManagedCLIPSEnvironment, IDisposable
         return capture;
     }
 
-    public bool Restore(EnvironmentCapture environmentCapture)
+    public bool Restore(ClipsSnapshot environmentCapture)
     {
         if (environmentCapture == null)
         {
@@ -260,7 +260,7 @@ public class ManagedCLIPSEnvironment : IManagedCLIPSEnvironment, IDisposable
 
     public byte[] BinaryCapture()
     {
-        var binaryCapture = new BinaryEnvironmentCapture();
+        var binaryCapture = new BinaryClipsSnapshot();
         string? tempInstancesPath = null;
         string? tempFactsPath = null;
 
@@ -308,7 +308,7 @@ public class ManagedCLIPSEnvironment : IManagedCLIPSEnvironment, IDisposable
         try
         {
             string jsonString = Encoding.UTF8.GetString(binaryCaptureData);
-            BinaryEnvironmentCapture? binaryCapture = JsonConvert.DeserializeObject<BinaryEnvironmentCapture>(jsonString);
+            BinaryClipsSnapshot? binaryCapture = JsonConvert.DeserializeObject<BinaryClipsSnapshot>(jsonString);
             if (binaryCapture == null)
             {
                 _logger.LogError("Failed to deserialize binary capture data");
@@ -402,7 +402,7 @@ public class ManagedCLIPSEnvironment : IManagedCLIPSEnvironment, IDisposable
     {
         if (_environment == IntPtr.Zero)
         {
-            throw new ObjectDisposedException(nameof(ManagedCLIPSEnvironment));
+            throw new ObjectDisposedException(nameof(Clips));
         }
     }
 

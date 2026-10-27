@@ -1,4 +1,4 @@
-namespace ManagedDotNet.CLIPS.Abstractions;
+namespace ManagedDotNet.Clips.Abstractions;
 
 
 /// <summary>
