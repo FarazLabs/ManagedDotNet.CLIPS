@@ -9,7 +9,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DisableImplicitNamespaceImports>false</DisableImplicitNamespaceImports>
 
-    <PackageId>ManagedDotNet.CLIPS</PackageId>
+    <PackageId>ManagedDotNet.Clips</PackageId>
     <Version>1.2.0</Version>
     <Authors>Faraz Zabihian</Authors>
     <Company>N/A</Company>
@@ -21,8 +21,8 @@
     </Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <RepositoryUrl>https://github.com/FarazLabs/ManagedDotNet.CLIPS</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/FarazLabs/ManagedDotNet.CLIPS</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/FarazLabs/ManagedDotNet.Clips</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/FarazLabs/ManagedDotNet.Clips</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>CLIPS,RulesEngine,ExpertSystem,PInvoke,Net8,Linux,Windows,x64</PackageTags>
 
@@ -57,7 +57,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="CLIPS.Tests" />
+    <InternalsVisibleTo Include="ManagedDotNet.Clips.Tests" />
   </ItemGroup>
 
   <!-- Copy / pack native libs when present (path separators work on Windows + Linux CI) -->

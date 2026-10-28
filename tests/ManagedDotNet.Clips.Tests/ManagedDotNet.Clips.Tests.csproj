@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <RootNamespace>ManagedDotNet.Clips.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\CLIPS.csproj" />
+    <ProjectReference Include="..\..\src\ManagedDotNet.Clips.csproj" />
   </ItemGroup>
 
 </Project>

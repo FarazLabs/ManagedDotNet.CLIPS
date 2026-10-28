@@ -1,4 +1,4 @@
-# ManagedDotNet.CLIPS
+# ManagedDotNet.Clips
 
 Managed .NET 8 wrapper around **CLIPS 6.4** via **P/Invoke** (`libclips.so` / `clips.dll`).
 
@@ -34,7 +34,7 @@ Add a `nuget.config` (or equivalent) pointing at the FarazLabs feed:
 PAT needs at least `read:packages`. Then:
 
 ```bash
-dotnet add package ManagedDotNet.CLIPS
+dotnet add package ManagedDotNet.Clips
 ```
 
 ## Quick start
@@ -93,8 +93,8 @@ Place `clips.dll` at `native/clips/build/native/win-x64/clips.dll` before packin
 ## Build managed
 
 ```bash
-dotnet build ManagedDotNet.CLIPS.sln -c Release
-dotnet test ManagedDotNet.CLIPS.sln -c Release
+dotnet build ManagedDotNet.Clips.sln -c Release
+dotnet test ManagedDotNet.Clips.sln -c Release
 ```
 
 ## Layout

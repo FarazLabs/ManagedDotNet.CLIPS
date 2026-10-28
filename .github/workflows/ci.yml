@@ -28,7 +28,7 @@ jobs:
           test -f native/clips/build/native/linux-x64/libclips.so
 
       - name: Test
-        run: dotnet test ManagedDotNet.CLIPS.sln -c Release --verbosity normal
+        run: dotnet test ManagedDotNet.Clips.sln -c Release --verbosity normal
 
       - name: Upload linux native
         uses: actions/upload-artifact@v4
@@ -67,7 +67,7 @@ jobs:
           Test-Path $dest | ForEach-Object { if (-not $_) { throw "clips.dll missing at $dest" } }
 
       - name: Test
-        run: dotnet test ManagedDotNet.CLIPS.sln -c Release --verbosity normal
+        run: dotnet test ManagedDotNet.Clips.sln -c Release --verbosity normal
 
       - name: Upload windows native
         uses: actions/upload-artifact@v4
@@ -107,7 +107,7 @@ jobs:
 
       - name: Pack
         run: |
-          dotnet pack src/CLIPS.csproj -c Release -p:GeneratePackageOnBuild=false
+          dotnet pack src/ManagedDotNet.Clips.csproj -c Release -p:GeneratePackageOnBuild=false
           ls -la src/nupkgs
 
       - name: Push to GitHub Packages
