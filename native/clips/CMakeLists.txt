@@ -1,10 +1,13 @@
 cmake_minimum_required(VERSION 3.16)
 project(clips C)
 
-set(CLIPS_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../CLIPSCLRWrapper/Source/CLIPS")
+# CLIPS 7.0.x core (6.4 sources remain under CLIPSCLRWrapper for reference)
+set(CLIPS_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../clipsrules-code-r982-branches-70x/core")
 set(CLIPS_SHIM_DIR "${CMAKE_CURRENT_SOURCE_DIR}/shim")
 
 file(GLOB CLIPS_C_SOURCES "${CLIPS_SRC_DIR}/*.c")
+# Shared library does not need the console entry point
+list(FILTER CLIPS_C_SOURCES EXCLUDE REGEX ".*/main\\.c$")
 list(APPEND CLIPS_C_SOURCES "${CLIPS_SHIM_DIR}/clips_pinvoke.c")
 
 add_library(clips SHARED ${CLIPS_C_SOURCES})
@@ -20,6 +23,7 @@ target_compile_definitions(clips PRIVATE
   ALLOW_ENVIRONMENT_GLOBALS=0
   DEFFUNCTION_CONSTRUCT=1
   OBJECT_SYSTEM=1
+  DEFTABLE_CONSTRUCT=1
   BLOAD_AND_BSAVE=1
   BLOAD_INSTANCES=1
   BSAVE_INSTANCES=1

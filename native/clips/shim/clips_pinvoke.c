@@ -37,6 +37,36 @@ static void Clips_ClearValue(ClipsPInvokeValue *value)
   value->type = CLIPS_PINVOKE_VOID;
 }
 
+/* Match save-facts / save-instances: instance addresses as [name], escaped strings. */
+typedef struct ClipsSavePrintFlags
+{
+  bool preserveEscapedCharacters;
+  bool addressesToStrings;
+  bool instanceAddressesToNames;
+} ClipsSavePrintFlags;
+
+static ClipsSavePrintFlags Clips_BeginSaveStylePrint(Environment *theEnv)
+{
+  ClipsSavePrintFlags previous;
+
+  previous.preserveEscapedCharacters = PrintUtilityData(theEnv)->PreserveEscapedCharacters;
+  previous.addressesToStrings = PrintUtilityData(theEnv)->AddressesToStrings;
+  previous.instanceAddressesToNames = PrintUtilityData(theEnv)->InstanceAddressesToNames;
+
+  PrintUtilityData(theEnv)->PreserveEscapedCharacters = true;
+  PrintUtilityData(theEnv)->AddressesToStrings = true;
+  PrintUtilityData(theEnv)->InstanceAddressesToNames = true;
+
+  return previous;
+}
+
+static void Clips_EndSaveStylePrint(Environment *theEnv, ClipsSavePrintFlags previous)
+{
+  PrintUtilityData(theEnv)->PreserveEscapedCharacters = previous.preserveEscapedCharacters;
+  PrintUtilityData(theEnv)->AddressesToStrings = previous.addressesToStrings;
+  PrintUtilityData(theEnv)->InstanceAddressesToNames = previous.instanceAddressesToNames;
+}
+
 static int Clips_FillFromCLIPSValue(Environment *theEnv, CLIPSValue *cv, ClipsPInvokeValue *out)
 {
   unsigned short type;
@@ -331,12 +361,18 @@ int Clips_GetFactPPForms(void *env, const char *moduleName, char ***formsOut, in
      return 0;
     }
 
-  for (fact = GetNextFactInScope(theEnv, NULL); fact != NULL; fact = GetNextFactInScope(theEnv, fact))
-    {
-     SBReset(sb);
-     FactPPForm(fact, sb, false);
-     forms[i++] = Clips_StrDup(sb->contents);
-    }
+  {
+   ClipsSavePrintFlags printFlags = Clips_BeginSaveStylePrint(theEnv);
+
+   for (fact = GetNextFactInScope(theEnv, NULL); fact != NULL; fact = GetNextFactInScope(theEnv, fact))
+     {
+      SBReset(sb);
+      FactPPForm(fact, sb, false);
+      forms[i++] = Clips_StrDup(sb->contents);
+     }
+
+   Clips_EndSaveStylePrint(theEnv, printFlags);
+  }
 
   SBDispose(sb);
   SetCurrentModule(theEnv, previous);
@@ -400,12 +436,18 @@ int Clips_GetInstancePPForms(void *env, const char *moduleName, char ***formsOut
      return 0;
     }
 
-  for (instance = GetNextInstanceInScope(theEnv, NULL); instance != NULL; instance = GetNextInstanceInScope(theEnv, instance))
-    {
-     SBReset(sb);
-     InstancePPForm(instance, sb);
-     forms[i++] = Clips_StrDup(sb->contents);
-    }
+  {
+   ClipsSavePrintFlags printFlags = Clips_BeginSaveStylePrint(theEnv);
+
+   for (instance = GetNextInstanceInScope(theEnv, NULL); instance != NULL; instance = GetNextInstanceInScope(theEnv, instance))
+     {
+      SBReset(sb);
+      InstancePPForm(instance, sb);
+      forms[i++] = Clips_StrDup(sb->contents);
+     }
+
+   Clips_EndSaveStylePrint(theEnv, printFlags);
+  }
 
   SBDispose(sb);
   SetCurrentModule(theEnv, previous);

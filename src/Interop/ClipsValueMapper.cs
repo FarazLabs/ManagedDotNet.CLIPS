@@ -1,6 +1,5 @@
 using System.Runtime.InteropServices;
-using ManagedDotNet.Clips.Api;
-using ManagedDotNet.Clips.Api.Values;
+using ManagedDotNet.Clips.Api.Models.Values;
 
 namespace ManagedDotNet.Clips.Interop;
 

@@ -15,30 +15,30 @@ public static class DependencyInjectionExtensions
     /// Each keyed instance uses a dedicated environment builder.
     /// </summary>
     /// <param name="services">The service collection to register into.</param>
-    /// <param name="builderFactory">A factory that provides an initialized <see cref="IClipsConfigurer"/> using the service provider.</param>
+    /// <param name="builderFactory">A factory that provides an initialized <see cref="IClipsEnvironmentConfigurator"/> using the service provider.</param>
     /// <param name="key">The key to identify this CLIPS instance in the DI container.</param>
     /// <returns>The modified service collection.</returns>
-    public static IServiceCollection AddClipsPool(this IServiceCollection services, string key, Func<IServiceProvider, IClipsConfigurer> builderFactory)
+    public static IServiceCollection AddClipsPool(this IServiceCollection services, string key, Func<IServiceProvider, IClipsEnvironmentConfigurator> builderFactory)
     {
         // Register the factory as keyed service - convert the service provider factory to a parameterless factory
-        services.AddKeyedSingleton<Func<IServiceProvider, IClipsConfigurer>>(key, builderFactory);
+        services.AddKeyedSingleton<Func<IServiceProvider, IClipsEnvironmentConfigurator>>(key, builderFactory);
 
 
         // Register keyed object pool for this specific CLIPS instance
         // Qualify Core.Clips — simple name "Clips" collides with this namespace.
-        services.AddKeyedSingleton<ObjectPool<Core.Clips>>(key, (provider, _) =>
+        services.AddKeyedSingleton<ObjectPool<Core.ClipsEnvironment>>(key, (provider, _) =>
         {
-            var policy = new ClipsPooledObjectPolicy(provider, key);
+            var policy = new ClipsEnvironmentPooledObjectPolicy(provider, key);
             var poolProvider = provider.GetRequiredService<ObjectPoolProvider>();
-            ObjectPool<Core.Clips> objectPool = poolProvider.Create(policy);
+            ObjectPool<Core.ClipsEnvironment> objectPool = poolProvider.Create(policy);
             return objectPool;
         });
 
         // Add the pooled service
-        services.AddKeyedTransient<IClipsPool>(key, (provider, _) =>
+        services.AddKeyedTransient<IClipsEnvironmentPool>(key, (provider, _) =>
         {
-            var pool = provider.GetRequiredKeyedService<ObjectPool<Core.Clips>>(key);
-            return new ClipsPool(pool);
+            var pool = provider.GetRequiredKeyedService<ObjectPool<Core.ClipsEnvironment>>(key);
+            return new ClipsEnvironmentPool(pool);
         });
 
         // Create a pool of BusinessRules
@@ -51,7 +51,7 @@ public static class DependencyInjectionExtensions
     }
 
     /// <summary>
-    /// Warms a keyed <see cref="IClipsPool"/> by taking and releasing
+    /// Warms a keyed <see cref="IClipsEnvironmentPool"/> by taking and releasing
     /// a specified number of instances from the pool.
     /// </summary>
     /// <param name="app">The application builder used to access services.</param>
@@ -60,9 +60,9 @@ public static class DependencyInjectionExtensions
     public static void WarmUpClipsPool(this IApplicationBuilder app, string key, int count = 10)
     {
         using var scope = app.ApplicationServices.CreateScope();
-        var pool = scope.ServiceProvider.GetRequiredKeyedService<ObjectPool<Core.Clips>>(key);
+        var pool = scope.ServiceProvider.GetRequiredKeyedService<ObjectPool<Core.ClipsEnvironment>>(key);
 
-        var items = new List<Core.Clips>(count);
+        var items = new List<Core.ClipsEnvironment>(count);
 
         // Take objects from the pool
         for (int i = 0; i < count; i++)

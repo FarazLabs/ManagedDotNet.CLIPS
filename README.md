@@ -1,6 +1,6 @@
 # ManagedDotNet.Clips
 
-Managed .NET 8 wrapper around **CLIPS 6.4** via **P/Invoke** (`libclips.so` / `clips.dll`).
+Managed .NET 8 wrapper around **CLIPS 7.0** via **P/Invoke** (`libclips.so` / `clips.dll`).
 
 Provides pooled rules-engine environments, typed `Eval` results, fact assert/fire, text and binary capture/restore, and ASP.NET Core DI helpers.
 
@@ -43,12 +43,12 @@ dotnet add package ManagedDotNet.Clips
 using ManagedDotNet.Clips;
 using ManagedDotNet.Clips.Abstractions;
 using ManagedDotNet.Clips.Api;
-using ManagedDotNet.Clips.Api.Values;
+using ManagedDotNet.Clips.Api.Models.Values;
 
 services.AddClipsPool("dialogue", sp => sp.GetRequiredService<MyConfigurer>());
 
-var pool = sp.GetRequiredKeyedService<IClipsPool>("dialogue");
-IClips engine = pool.Rent();
+var pool = sp.GetRequiredKeyedService<IClipsEnvironmentPool>("dialogue");
+IClipsEnvironment engine = pool.Rent();
 try
 {
     engine.Assert(myFact);
@@ -103,7 +103,8 @@ dotnet test ManagedDotNet.Clips.sln -c Release
 |------|------|
 | `src/` | Managed library (`ManagedDotNet.Clips.*`) + P/Invoke interop |
 | `native/clips/` | CMake/Makefile + P/Invoke shim |
-| `native/CLIPSCLRWrapper/Source/CLIPS/` | Vendored CLIPS 6.4 C sources |
+| `native/clipsrules-code-r982-branches-70x/core/` | Vendored CLIPS 7.0.x C sources (active build) |
+| `native/CLIPSCLRWrapper/Source/CLIPS/` | Vendored CLIPS 6.4 C sources (kept for reference) |
 | `tests/` | Smoke tests |
 
 ## Namespaces
@@ -121,4 +122,4 @@ dotnet test ManagedDotNet.Clips.sln -c Release
 
 MIT — see [LICENSE](LICENSE).
 
-CLIPS itself is subject to its upstream license terms under `native/CLIPSCLRWrapper/Source/CLIPS`.
+CLIPS itself is subject to its upstream license terms under `native/clipsrules-code-r982-branches-70x/license.txt`.
